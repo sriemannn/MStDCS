@@ -1,0 +1,24 @@
+# ignore some R scripts just for preprocessing and storing snippets
+descriptive_preprocessing.R
+behavioral_preprocessing.R
+code_dump.R
+behavioral.R
+cis_acc_glmm.rds
+rt_explore.R
+sessionInfo.md
+**svg/*
+**dump/*
+
+
+# ignore data files
+*.csv
+
+# ignore cache files
+*.vscode
+*.json
+
+# ignores tables and saved plots
+*.docx
+*.txt
+*.png
+*.svg
