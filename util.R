@@ -7,6 +7,7 @@ library(ggplot2)
 #'
 #' @param path Path to the excel file
 #' @return A tibble with the applied stimulation protocols
+#' @export
 get_stim <- function(path) {
     read_excel(
         path,
@@ -23,7 +24,6 @@ get_stim <- function(path) {
             names_to = c("prot", "session"),
             values_to = "applied_protocol"
         ) %>%
-        # mutate_at("applied_protocol", str_to_lower) %>%
         select(-c("prot"))
 }
 
@@ -31,6 +31,7 @@ get_stim <- function(path) {
 #'
 #' @param path Path to the excel file
 #' @return A tibble with the recruitment list
+#' @export
 get_recruitment_list <- function(path) {
     read_excel(path) %>%
         filter(!is.na(Probandencode)) %>%
@@ -42,13 +43,18 @@ get_recruitment_list <- function(path) {
         rename(subject = Probandencode)
 }
 
-#' Plot an emmeans table
+#' Plot an emmeans table from the MStDCS study
+#'
+#' Use a custom color schem ewith red for the anodal stimulation group,
+#' blue for the cathodal stimulation group, and a grey for their respective
+#' sham session.
 #'
 #' @param emmeans_table An emmeans table as returned by
 #'  \code{emmeans::emmeans()}
 #' @param ytitle The title for the y-axis
 #' @param dodge_width The width for dodging the points
 #' @return A ggplot object
+#' @export
 plot_emmeans <- function(emmeans_table, ytitle, dodge_width = 0.3) {
     ggplot(emmeans_table, aes(
         x = stimulation_group, y = response,
@@ -78,10 +84,20 @@ plot_emmeans <- function(emmeans_table, ytitle, dodge_width = 0.3) {
         ylab(ytitle)
 }
 
-trial_counter <- function() {
-    trial <- control %>%
-        group_by(subject, session, block) %>%
-        count()
+#' Count the number of trials that were conducted in each block
+#'
+#' Not every subject completed the same number of trials in each block.
+#' This function counts the number of trials that were conducted in each block
+#' for each subject and returns a vector that counts up the trials.
+#'
+#' @param control A tibble with the control data
+#' @return A vector that counts up the trials
+#' @export
+trial_counter <- function(dat) {
+    magrittr::use_pipe(export = TRUE)
+    trial <- dat %>%
+        dplyr::group_by(subject, session, block) %>%
+        dplyr::count()
     unlist(lapply(trial$n, seq))
 }
 
@@ -93,11 +109,6 @@ rename_terms_rt <- function(nice_rt) {
         gsub("sessiont2", "Session", x = _)
 }
 
-trial_counter <- function(d) {
-    d %>%
-        group_by(group, stimulation_group, active) %>%
-        count()
-}
 
 rename_lrt <- function() {
     c(
@@ -113,6 +124,18 @@ rename_lrt <- function() {
     )
 }
 
+
+#' Format a nice table and save it as a docx file
+#'
+#' Format a table from \code{rempsyc::nice_table} and save it as a docx file.
+#' Needs a "tables" directory in the working directory,
+#' where the file will be saved.
+#'
+#' @param table A table from \code{rempsyc::nice_table}
+#' @param name The name of the file
+#' @param fontsize The fontsize for the table
+#' @param linespacing The linespacing for the table
+#' @export
 format_and_save <- function(table, name, fontsize = 10, linespacing = 1.15) {
     table <- flextable::fontsize(
         table,
@@ -133,6 +156,17 @@ format_and_save <- function(table, name, fontsize = 10, linespacing = 1.15) {
     )
 }
 
+#' Format the results of the RT filter.
+#'
+#' Rename the columns and calculate the percentage of missing values, values
+#' outside the interval, and outliers. Assumes that trials were filtered
+#' for missing values (1) by applying a 0.2-6s interval (2) by removing
+#' all trials that were outside an interval Median +/- 3 * MAD.
+#'
+#' @param d A tibble with the results of the RT filter
+#' @param interval The interval for the RT filter
+#' @return A tibble with the formatted results
+#' @export
 format_rt_filter <- function(d, interval) {
     d %>%
         rename(
